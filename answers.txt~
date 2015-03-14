@@ -1,0 +1,20 @@
+Name: Guillaume Lam
+UCLA ID: 304253718
+
+Collaborators:
+
+-------------------------------------------------------------------------------
+
+Response to Exercise 1: The sys_getpid() call would likely not return the correct value due to the fact that many of the sys calls would overwrite the current->p_registers.reg_eax which is where the pid is stored.
+
+Exercise 2: Modified functions copy_stack() and do_fork() in mpos-kern.c by following the steps given in the file.
+
+Exercise 3: To implement process blocking, I used the P_BLOCKED enum found in mpos-kern.h. First I changed the else case for INT_SYS_WAIT so that the first time the caller process calls sys_wait() while the callee process is sitll running, the caller will be blocked from making further sys_wait()'s. We want to remember the process that was blocked, which we want to wake upon current process completion. To do this, we add a process_t* variable to the process descriptor structure which will point to the caller process that was blocked. We awaken the blocked process upon INT_SYS_EXIT which is when the current process has been completed. In the case INT_SYS_EXIT, we check if the newly created field in the current process is NULL or not. If it is not NULL then we set its p_state field to P_RUNNABLE, we set its return value to the exit value stored in the current process's eax register during sys_exit was running. In doing so, we return to the process that was blocked when it called sys_wait on a process that was still running.
+
+Exercise 4: To actually get rid of exitted processes in proc_array, we have to change their p_state fields to P_EMPTY. We insert this line of code at two places, once in INT_SYS_WAIT where sys_wait is called after sys_exit is called, and once in INT_SYS_EXIT where sys_exit is called after sys_wait is called.
+
+----------------------------------------------------------------------------
+
+Extra credit exercises:
+
+Exercise 6: First I wrote the sys_newthread function. I found the first empty process in proc_array and initialized it by making it running, setting its return value to 0 since it's a child, and setting its instruction pointer to start_function. As for making a new sys call, I first went into mpos.h to define the case INT_SYS_NEWTHRD which represented making a sys call for a new thread. As for the actually function of case INT_SYS_THRD, I followed the same structure as INT_SYS_FORK. I set the parent's return value to be the return value of sys_newthread() and then called run(current) to return to the parent process. The assumption here was that the value of the instruction pointer would be stored in the parent's eax register, which we had to cast to a void* to be passed into sys_newthread(). 
